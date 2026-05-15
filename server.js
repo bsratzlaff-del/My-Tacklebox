@@ -24,15 +24,17 @@ app.post('/api/chat', async (req, res) => {
   }
 
   try {
-    // We use gemini-2.5-flash for the free tier
+    // We use gemini-2.0-flash for the free tier
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash",
       contents: [{ role: "user", parts: [{ text: message }] }],
     });
 
     res.json({
       success: true,
       data: response.text, // The SDK simplifies the response in the 2026 version
+      debug: response, // See the whole object
+      data: response.text || "No text returned"
     });
   } catch (error) {
     console.error('Gemini Error:', error);

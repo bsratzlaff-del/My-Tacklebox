@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tacklebox-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tacklebox
+  template:
+    metadata:
+      labels:
+        app: tacklebox
+    spec:
+      containers:
+      - name: my-tacklebox
+        image: my-tacklebox:v5
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+        env:
+        - name: GEMINI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: tacklebox-secrets
+              key: GEMINI_API_KEY
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tacklebox-service
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 8080
+    targetPort: 3000
+  selector:
+    app: tacklebox

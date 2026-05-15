@@ -1,0 +1,26 @@
+Google API Key
+
+🏗️ High-Level Architecture
+Before we dive into the code, here is how these pieces will play together:
+
+Express Backend: Acts as your API gateway, handling authentication and routing.
+
+OpenAI SDK: The "brains" inside your Express routes, processing prompts and returning AI magic.
+
+Docker: To package your Express app into a portable container.
+
+Kubernetes: To manage those containers, ensuring "My Tacklebox" stays afloat even if traffic spikes.
+
+my-tacklebox/
+├── node_modules/         # Created by npm install
+├── src/                  # All your application logic
+│   └── server.js         # The Express code we wrote
+├── k8s/                  # Kubernetes manifest files
+│   ├── deployment.yaml   # Defines your pods and replicas
+│   ├── service.yaml      # Defines how to access the app
+│   └── secrets.yaml      # Your encrypted OpenAI API keys
+├── .env                  # LOCAL ONLY: Secrets for dev (ignore in git)
+├── .gitignore            # Tells Git to ignore .env and node_modules
+├── .dockerignore         # Tells Docker to ignore node_modules
+├── Dockerfile            # Instructions to build the image
+└── package.json          # App dependencies and scripts
