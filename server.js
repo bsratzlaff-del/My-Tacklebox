@@ -21,6 +21,11 @@ mongoose.connect(mongoURI)
   .then(() => console.log('📁 Cast a line into MongoDB successfully!'))
   .catch((err) => console.error('❌ Database connection snapped:', err));
 
+// Monitor MongoDB connection lifecycle events
+mongoose.connection.on('connected', () => console.log('📁 MongoDB Status: Connected'));
+mongoose.connection.on('error', (err) => console.error('🚨 MongoDB Error:', err));
+mongoose.connection.on('disconnected', () => console.warn('⚠️ MongoDB Status: Disconnected from cluster!'));
+
 // Initialize the Gemini client
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
@@ -59,6 +64,13 @@ app.post('/api/chat', async (req, res) => {
     console.error('Gemini Error:', error);
     res.status(500).json({ error: 'The line snapped. Gemini is unreachable.' });
   }
+});
+
+// ⚠️ DEBUG ONLY: Simulate a catastrophic application failure
+app.post('/api/debug/crash', (req, res) => {
+  console.error('💣 Chaos Endpoint Triggered! Simulating a fatal backend crash...');
+  res.status(500).json({ status: 'crashing', message: 'The engine room is on fire! Goodbye.' });
+  setTimeout(() => { process.exit(1); }, 500);
 });
 
 app.listen(PORT, () => {
