@@ -6,15 +6,16 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      app: tacklebox
+      app: "tacklebox"
   template:
     metadata:
       labels:
-        app: tacklebox
+        app: "tacklebox"
     spec:
       containers:
+      # NATIVE APP CONTAINER (Simple, clean, single-container setup)
       - name: my-tacklebox
-        image: my-tacklebox:v16
+        image: my-tacklebox:v27
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000
@@ -25,24 +26,34 @@ spec:
           limits:
             cpu: "250m"
             memory: "256Mi"
+        volumeMounts:
+        - name: backend-log-storage
+          mountPath: /usr/src/app/logs    # Where Winston dumps the log files inside the app
         env:
-            - name: GEMINI_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: tacklebox-secrets
-                  key: GEMINI_API_KEY
-            - name: MONGO_USER
-              valueFrom:
-                secretKeyRef:
-                  name: tacklebox-secrets
-                  key: MONGO_ROOT_USER
-            - name: MONGO_PASS
-              valueFrom:
-                secretKeyRef:
-                  name: tacklebox-secrets
-                  key: MONGO_ROOT_PASSWORD
-            - name: MONGO_HOST
-              value: "mongodb-service"
+          - name: GEMINI_API_KEY
+            valueFrom:
+              secretKeyRef:
+                name: tacklebox-secrets
+                key: GEMINI_API_KEY
+          - name: MONGO_USER
+            valueFrom:
+              secretKeyRef:
+                name: tacklebox-secrets
+                key: MONGO_ROOT_USER
+          - name: MONGO_PASS
+            valueFrom:
+              secretKeyRef:
+                name: tacklebox-secrets
+                key: MONGO_ROOT_PASSWORD
+          - name: MONGO_HOST
+            value: "mongodb-service"
+      
+      # 🛠️ CORRECTLY PLACED INDENTATION: Safely outside the container array, inside the Pod spec
+      volumes:
+      - name: backend-log-storage
+        persistentVolumeClaim:
+          claimName: log-pvc
+
 ---
 apiVersion: v1
 kind: Service
@@ -54,4 +65,4 @@ spec:
   - port: 8585
     targetPort: 3000
   selector:
-    app: tacklebox
+    app: "tacklebox"

@@ -1,4 +1,11 @@
 import winston from 'winston';
+import fs from 'fs'; 
+import path from 'path';
+
+const logDir = 'logs';
+if (!fs.existsSync(logDir)) {
+    fs.mkdirSync(logDir, { recursive: true });
+}
 
 const logger = winston.createLogger({
   level: 'info',
@@ -7,26 +14,17 @@ const logger = winston.createLogger({
     winston.format.json()
   ),
   transports: [
-    // 1. Write all system errors to error.log
-    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-    // 2. Write everything to combined.log
-    new winston.transports.File({ filename: 'logs/combined.log' })
+    new winston.transports.File({ filename: path.join(logDir, 'error.log'), level: 'error', maxsize: 5242880 }),
+    new winston.transports.File({ filename: path.join(logDir, 'combined.log'), maxsize: 5242880 })
   ],
-  // Catch fatal crashes and force them to the file
-  exceptionHandlers: [
-    new winston.transports.File({ filename: 'logs/error.log' })
-  ],
-  rejectionHandlers: [
-    new winston.transports.File({ filename: 'logs/error.log' })
-  ]
+  exceptionHandlers: [new winston.transports.File({ filename: path.join(logDir, 'error.log') })],
+  rejectionHandlers: [new winston.transports.File({ filename: path.join(logDir, 'error.log') })]
 });
 
-// Also print to console so 'kubectl logs' still works
+// 🛠️ FIXED: Removed winston.format.colorize() so the text is raw, clean plain text.
+// This allows PowerShell to match strings and read emojis perfectly without ANSI corruption.
 logger.add(new winston.transports.Console({
-  format: winston.format.combine(
-    winston.format.colorize(),
-    winston.format.simple()
-  )
+  format: winston.format.simple()
 }));
 
 export default logger;

@@ -4,7 +4,7 @@ import { GoogleGenAI } from '@google/genai';
 import 'dotenv/config';
 import Profile from './models/Profile.js';
 import Gear from './models/Gear.js';
-import logger from './logger.js';
+import logger from './logger.js'; // 🛠️ Imports your clean logger.js file!
 
 const app = express();
 const PORT = process.env.PORT || 3000;
