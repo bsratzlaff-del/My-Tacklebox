@@ -51,7 +51,7 @@ metadata:
 spec:
   type: LoadBalancer
   ports:
-  - port: 8080
+  - port: 8585
     targetPort: 3000
   selector:
     app: tacklebox
