@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { GoogleGenAI } from '@google/genai';
 import 'dotenv/config';
 import Profile from './models/Profile.js';
+import Gear from './models/Gear.js';
 import logger from './logger.js';
 
 const app = express();
@@ -40,6 +41,35 @@ app.get('/health', (req, res) => {
     ai: 'Gemini client active',
     database: dbStatus
   });
+});
+
+// GET: Fetch all gear/bait inside a specific user's tacklebox
+app.get('/api/gear/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    // Find all gear documents that match this userId
+    const tacklebox = await Gear.find({ userId });
+
+    logger.info(`📦 Retrieved ${tacklebox.length} gear items for user ${userId}`);
+    res.status(200).json(tacklebox);
+  } catch (error) {
+    logger.error(`🚨 Failed to fetch tacklebox: ${error.message}`);
+    res.status(500).json({ error: 'Could not retrieve tacklebox inventory.' });
+  }
+});
+
+app.post('/api/gear', async (req, res) => {
+  try {
+    const { userId, name, category, brand, color, metadata } = req.body;
+    const newGear = new Gear({ userId, name, category, brand, color, metadata });
+    const savedGear = await newGear.save();
+    logger.info(`🪱 Added ${category}: ${name} to tacklebox!`);
+    res.status(201).json(savedGear);
+  } catch (error) {
+    logger.error(`🚨 Failed to add gear: ${error.message}`);
+    res.status(500).json({ error: 'The database layer rejected the gear item.' });
+  }
 });
 
 // AI Chat endpoint
