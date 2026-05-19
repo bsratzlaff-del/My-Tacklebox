@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { GoogleGenAI } from '@google/genai';
 import 'dotenv/config';
 import Profile from './models/Profile.js';
+import logger from './logger.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -10,22 +11,21 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 
 // 1. Extract Environment Variables injected by Kubernetes
-const mongoUser = process.env.MONGO_USER;
-const mongoPass = process.env.MONGO_PASS;
-const mongoHost = process.env.MONGO_HOST || 'localhost'; 
+const mongoUser = encodeURIComponent(process.env.MONGO_USER || '');
+const mongoPass = encodeURIComponent(process.env.MONGO_PASS || '');
+const mongoHost = process.env.MONGO_HOST || 'localhost';
 
-// 2. Build MongoDB connection string (routes via K8s internal DNS service name)
 const mongoURI = `mongodb://${mongoUser}:${mongoPass}@${mongoHost}:27017/tacklebox?authSource=admin`;
 
 // Connect to MongoDB
 mongoose.connect(mongoURI)
-  .then(() => console.log('📁 Cast a line into MongoDB successfully!'))
-  .catch((err) => console.error('❌ Database connection snapped:', err));
+  .then(() => logger.info('📁 Cast a line into MongoDB successfully!'))
+  .catch((err) => logger.error(`❌ Database connection snapped: ${err.message}`));
 
 // Monitor MongoDB connection lifecycle events
-mongoose.connection.on('connected', () => console.log('📁 MongoDB Status: Connected'));
-mongoose.connection.on('error', (err) => console.error('🚨 MongoDB Error:', err));
-mongoose.connection.on('disconnected', () => console.warn('⚠️ MongoDB Status: Disconnected from cluster!'));
+mongoose.connection.on('connected', () => logger.info('📁 MongoDB Status: Connected'));
+mongoose.connection.on('error', (err) => logger.error('🚨 MongoDB Error:', err));
+mongoose.connection.on('disconnected', () => logger.warn('⚠️ MongoDB Status: Disconnected from cluster!'));
 
 // Initialize the Gemini client
 const ai = new GoogleGenAI({
