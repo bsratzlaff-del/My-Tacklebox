@@ -26,11 +26,23 @@ spec:
             cpu: "250m"
             memory: "256Mi"
         env:
-        - name: GEMINI_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: tacklebox-secrets
-              key: GEMINI_API_KEY
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tacklebox-secrets
+                  key: GEMINI_API_KEY
+            - name: MONGO_USER
+              valueFrom:
+                secretKeyRef:
+                  name: tacklebox-secrets
+                  key: MONGO_ROOT_USER
+            - name: MONGO_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: tacklebox-secrets
+                  key: MONGO_ROOT_PASSWORD
+            - name: MONGO_HOST
+              value: "mongodb-service"
 ---
 apiVersion: v1
 kind: Service
