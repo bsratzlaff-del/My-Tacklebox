@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: my-tacklebox
-        image: my-tacklebox:v7
+        image: my-tacklebox:v9
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000
