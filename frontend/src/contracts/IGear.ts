@@ -17,15 +17,9 @@ export interface IWeatherSnapshot {
     barometricPressureIn: number; // e.g., 29.92 (Crucial for fish activity!)
 }
 
-// 🛠️ ADD THIS: Strict contract for what the AI must return to the UI
+    // 🛠️ REFACTORED: Stripped out long prose blocks for quick mobile readability
 export interface IRecEngineOutput {
-    recommendedOwnedLures: {
-        lureName: string;
-        reasoning: string;
-    }[];
-    shoppingSuggestions: {
-        itemName: string;
-        whyYouNeedIt: string;
-    }[];
-    tacticalTip: string; // Global advice based on the barometric pressure/weather
+    ownedLureRecommendations: string[]; // e.g. ["🎣 Pink Trout Worm: Fish deep along points.", "🎣 Green Frog: Skip under overhanging trees."]
+    missingBuySuggestions: string[];    // e.g. ["🛒 Suspending Jerkbait (Targeting cold-water pre-spawn bass)"]
+    onTheWaterTacticalTip: string;       // ONE single, punchy, high-impact sentence.
 }

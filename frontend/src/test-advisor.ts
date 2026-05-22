@@ -37,12 +37,13 @@ async function runSimulation() {
     ];
 
     try {
-        // 3. Fire the request through our contract pipeline
         const plan = await advisor.generateFishingPlan(mockWeather, mockInventory);
 
-        console.log("\n✨ AI ADVISOR TACTICAL INSIGHTS GENERATED SUCCESSFULLY: ✨");
+        console.log("\n✨ ON THE WATER TELEMETRY: ✨");
         console.log("=========================================================");
-        console.log(JSON.stringify(plan, null, 2));
+        console.log(`RECOMMENDED OWNED GEAR:\n  ${plan.ownedLureRecommendations.join('\n  ')}\n`);
+        console.log(`RECOMMENDED SHOPPING LIST:\n  ${plan.missingBuySuggestions.join('\n  ')}\n`);
+        console.log(`TACTICAL TIP:\n  ${plan.onTheWaterTacticalTip}`);
         console.log("=========================================================");
 
     } catch (error) {
