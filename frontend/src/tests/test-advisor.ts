@@ -1,5 +1,5 @@
-import { TackleboxAdvisor } from './ai-agent/advisor.js';
-import { IGear, IWeatherSnapshot } from './contracts/IGear.js';
+import { TackleboxAdvisor } from '../ai-agent/advisor.js';
+import { IGear, IWeatherSnapshot } from '../contracts/IGear.js';
 
 async function runSimulation() {
     console.log("🎣 Starting Tacklebox AI Advisor Simulation...\n");
