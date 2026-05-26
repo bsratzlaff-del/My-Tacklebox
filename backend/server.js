@@ -5,11 +5,13 @@ import 'dotenv/config';
 import Profile from './models/Profile.js';
 import Gear from './models/Gear.js';
 import logger from './logger.js'; // 🛠️ Imports your clean logger.js file!
+import scanRoutes from '/src/routes/scan.routes.js'; // 🧑‍🔬 Import the new scan routes
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
+app.use('/api/inventory', scanRoutes);
 
 // 1. Extract Environment Variables injected by Kubernetes
 const mongoUser = encodeURIComponent(process.env.MONGO_USER || '');
