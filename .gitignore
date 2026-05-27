@@ -30,3 +30,12 @@ yarn-error.log*
 node_modules/
 .env
 *.log
+
+# Ignore all local database engines and instances
+**/data/
+**/_tmp/
+*.wt
+*.lock
+*.bson
+journal/
+diagnostic.data/
