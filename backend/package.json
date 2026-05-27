@@ -4,8 +4,7 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "logs:backend": "powershell -ExecutionPolicy Bypass -File ./start-logs-backend.ps1",
+    "start": "node dist/server.js",  
     "logs:frontend": "powershell -ExecutionPolicy Bypass -File ./start-logs-frontend.ps1"
   },
   "dependencies": {
@@ -13,6 +12,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "mongoose": "^9.6.2",
+    "multer": "^2.1.1",
     "winston": "^3.19.0"
   },
   "devDependencies": {

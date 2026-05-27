@@ -1,5 +1,6 @@
-import { GoogleGenAI, Type, Schema } from '@google/genai';
-import { IGear } from '../contracts/IGear.js';
+import { GoogleGenAI, Type } from '@google/genai';
+import type { Schema } from '@google/genai';
+import type { IGear } from '../contracts/IGear.ts';
 import dotenv from 'dotenv';
 
 dotenv.config();

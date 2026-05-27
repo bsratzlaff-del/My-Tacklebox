@@ -1,9 +1,9 @@
-import { Router, Request, Response } from 'express';
+import express, { type Request, type Response } from 'express';
 import multer from 'multer';
 import { TackleboxVision } from '../ai-agent/vision.js';
 import Gear from '../models/Gear.js';
 
-const router = Router();
+const router = express.Router();
 
 // Configure multer to hold the uploaded file memory buffer temporarily
 const upload = multer({
@@ -24,6 +24,12 @@ router.post('/scan', upload.single('tacklePhoto'), async (req: Request, res: Res
             return;
         }
 
+        const { userId } = req.body;
+        if (!userId) {
+            res.status(400).json({ error: "Missing required 'userId' field." });
+            return;
+        }
+
         console.log(`📸 Backend received a mobile upload: ${req.file.originalname} (${req.file.size} bytes)`);
 
         // 2. Initialize your backend AI Vision agent
@@ -38,7 +44,12 @@ router.post('/scan', upload.single('tacklePhoto'), async (req: Request, res: Res
         console.log(`🤖 Gemini successfully parsed ${parsedInventory.length} items from photo. Writing to MongoDB...`);
 
         // 4. Bulk insert right into MongoDB using your Mongoose Model
-        const savedInventory = await Gear.insertMany(parsedInventory);
+        const inventoryToSave = parsedInventory.map((item) => ({
+            ...item,
+            userId
+        }));
+
+        const savedInventory = await Gear.insertMany(inventoryToSave);
 
         // 5. Respond to the mobile app with the final database entries
         res.status(201).json({

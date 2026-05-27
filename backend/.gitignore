@@ -1,0 +1,18 @@
+node_modules/
+dist/
+data/
+.env
+
+backend/node_modules/
+backend/dist/
+backend/data/
+backend/.env
+
+# Ignore all local database engines and instances
+**/data/
+**/_tmp/
+*.wt
+*.lock
+*.bson
+journal/
+diagnostic.data/
