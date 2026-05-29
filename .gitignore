@@ -1,41 +1,20 @@
-# Dependencies
-node_modules/
-.pnp
-.pnp.js
-dist/
-*.log
-
-# Environment variables (Crucial for your Gemini Key!)
-.env
-.env.local
-
-# Docker
-.dockerignore
-# (Wait, don't ignore the Dockerfile itself, just the layers)
-
-# Debug logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# IDEs
-.vscode/
-.idea/
-
-# Kubernetes
-# (Don't ignore your manifests, but ignore local kubeconfigs if you have them)
-*.kubeconfig
-
-#Ignore AI Key files
+# ==========================================
+# 🧰 Root Project System Overrides
+# ==========================================
 node_modules/
 .env
 *.log
 
-# Ignore all local database engines and instances
-**/data/
-**/_tmp/
-*.wt
-*.lock
-*.bson
-journal/
-diagnostic.data/
+# ==========================================
+# ⚛️ Frontend Build Artifacts
+# ==========================================
+frontend/dist/
+frontend/.vite/
+
+# ==========================================
+# 🤖 Capacitor Native Build Files (CRITICAL)
+# ==========================================
+# We ignore machine-specific property caches, but KEEP the project structure
+**/android/.gradle/
+**/android/build/
+**/android/app/build

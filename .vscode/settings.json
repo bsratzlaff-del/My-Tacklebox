@@ -1,0 +1,11 @@
+{
+    "git.ignoreLimitWarning": true,
+    "yaml.schemas": {
+        "kubernetes://schema/v1@service": "file:///c%3A/Users/bsrat/Code/My%20Tacklebox/k8s/tacklebox.yaml"
+    },
+
+    "files.exclude": {
+    "**/backend_logs": false,  // Set to true if you want to completely hide it from the sidebar
+    "**/node_modules": true
+  }
+}
