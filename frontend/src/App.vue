@@ -1,27 +1,35 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 
-// 💡 Vue State Management: Just use ref() instead of useState!
 const usernameQuery = ref('bsratzlaff');
 const profileData = ref<any>(null);
+const gearInventory = ref<any[]>([]); // 🎣 State to hold our array of gear items
 const loading = ref(false);
 const errorMessage = ref('');
 
-// 💡 Vue Lifecycles: onMounted is your new useEffect(() => {}, [])
 const searchProfile = async () => {
-  loading.value = true; // Notice we use .value to change state in Vue scripts!
+  loading.value = true;
   errorMessage.value = '';
+  profileData.value = null;
+  gearInventory.value = []; // Clear previous gear array on new search
   
   try {
-    const response = await fetch(`http://localhost:3000/api/profiles/search?username=${usernameQuery.value}`);
+    // 1. Fetch user profile using the mobile loopback IP
+    const response = await fetch(`http://10.0.2.2:3000/api/profiles/search?username=${usernameQuery.value}`);
     
     if (!response.ok) {
       throw new Error('Failed to reel in data from the server.');
     }
     
     const data = await response.json();
-    // Grab the first profile found in our collection array
-    profileData.value = data.length > 0 ? data[0] : null;
+    
+    if (data.length > 0) {
+      profileData.value = data[0];
+      
+      // 2. 🪱 If a profile exists, fetch their gear immediately using their database ID!
+      const userId = profileData.value._id || 'mock-user-123';
+      await fetchUserGear(userId);
+    }
   } catch (error: any) {
     errorMessage.value = error.message;
   } finally {
@@ -29,7 +37,18 @@ const searchProfile = async () => {
   }
 };
 
-// Automatically run the search when the page loads for the first time
+const fetchUserGear = async (userId: string) => {
+  try {
+    // 🌐 Fetching gear via the emulator loopback link
+    const gearResponse = await fetch(`http://10.0.2.2:3000/api/gear/${userId}`);
+    if (gearResponse.ok) {
+      gearInventory.value = await gearResponse.json();
+    }
+  } catch (error) {
+    console.error('Failed to automatically load tacklebox inventory:', error);
+  }
+};
+
 onMounted(() => {
   searchProfile();
 });
@@ -44,7 +63,7 @@ onMounted(() => {
 
     <main>
       <div class="search-bar">
-        <input v-model="usernameQuery" type="text" placeholder="Search username..." />
+        <input v-model="usernameQuery" type="text" placeholder="Search username..." @keyup.enter="searchProfile" />
         <button @click="searchProfile">Search</button>
       </div>
 
@@ -54,10 +73,31 @@ onMounted(() => {
         ⚠️ {{ errorMessage }}
       </div>
 
-      <div v-else-if="profileData" class="profile-card">
-        <h3>🎣 Profile Locked In!</h3>
-        <p><strong>Username:</strong> {{ profileData.username }}</p>
-        <p><strong>Name:</strong> {{ profileData.name || 'N/A' }}</p>
+      <div v-else-if="profileData" class="dashboard-layout">
+        <div class="profile-card">
+          <h3>🎣 Profile Locked In!</h3>
+          <p><strong>Username:</strong> {{ profileData.username }}</p>
+          <p><strong>Name:</strong> {{ profileData.name || 'N/A' }}</p>
+        </div>
+
+        <div class="inventory-section">
+          <h2>🎣 My Gear Inventory</h2>
+          
+          <div v-if="gearInventory.length > 0" class="gear-grid">
+            <div v-for="item in gearInventory" :key="item._id || item.name" class="gear-card">
+              <h4>{{ item.name }}</h4>
+              <p class="tag">{{ item.category }}</p>
+              <div class="details">
+                <span><strong>Brand:</strong> {{ item.brand || 'Generic' }}</span>
+                <span><strong>Color:</strong> {{ item.color || 'N/A' }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div v-else class="empty-inventory">
+            <p>This tacklebox is empty! No lures, rods, or reels found.</p>
+          </div>
+        </div>
       </div>
 
       <div v-else class="status empty">
@@ -105,6 +145,11 @@ button {
   transition: background 0.2s;
 }
 button:hover { background-color: #42b883; }
+.dashboard-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
 .status {
   text-align: center;
   padding: 20px;
@@ -120,4 +165,46 @@ button:hover { background-color: #42b883; }
   box-shadow: 0 4px 6px rgba(0,0,0,0.05);
 }
 .profile-card h3 { margin-top: 0; color: #42b883; }
+
+/* New Design Layout Styles for Mobile Gear */
+.inventory-section h2 {
+  font-size: 20px;
+  color: #35495e;
+  margin-bottom: 10px;
+}
+.gear-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+.gear-card {
+  border: 1px solid #e2e8f0;
+  background: white;
+  padding: 12px;
+  border-radius: 6px;
+}
+.gear-card h4 { margin: 0 0 4px 0; font-size: 15px; }
+.tag {
+  display: inline-block;
+  background: #edf2f7;
+  color: #4a5568;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: bold;
+}
+.details {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  color: #718096;
+  margin-top: 8px;
+}
+.empty-inventory {
+  text-align: center;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px dashed #cbd5e0;
+}
 </style>
