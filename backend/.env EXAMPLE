@@ -1,3 +1,8 @@
 # Copy this file to .env and insert your actual key
-GEMINI_API_KEY=your_api_key_here
-PORT=your_port_here
+GEMINI_API_KEY=YOUR_KEY_GOES_HERE
+PORT=PORT_#
+
+# This demo is for typical login info for a MongoDB, other NoSQL databases will work 
+MONGO_URI=DATABASE_ADDRESS
+DB_USER=DATABASE_USER_GOES_HERE
+DB_PASS=DATABASE_PASSWORD_GOES_HERE

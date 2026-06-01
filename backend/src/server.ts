@@ -11,30 +11,40 @@ import scanRoutes from './routes/scan.routes.js';
 import cors from 'cors';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+// Ensure PORT is a number for Node's listen signature
+const PORT: number = parseInt(process.env.PORT || '3000', 10);
 
 // 🔓 Tell your Express server to welcome requests coming from your Vue app!
 app.use(cors({
-  origin: 'http://localhost:5173'
+  origin: '*'
 }));
-
-
 
 app.use(express.json());
 app.use('/api/inventory', scanRoutes);
 
-// Database selection logic
+// ==========================================
+// 🗄️ SECURE DATABASE AUTHENTICATION LOGIC
+// ==========================================
+
+// 1. Grab your credentials dynamically from your hidden .env variables
+const dbUser = process.env.DB_USER ? encodeURIComponent(process.env.DB_USER) : '';
+const dbPass = process.env.DB_PASS ? encodeURIComponent(process.env.DB_PASS) : '';
+
 let mongoURI: string;
 
+// 2. Build the connection string dynamically 
 if (process.env.MONGO_URI) {
+  // Use the full explicit string if defined in your .env
   mongoURI = process.env.MONGO_URI;
+} else if (dbUser && dbPass) {
+  // 🔐 Authenticate securely using your .env login credentials on port 27017
+  mongoURI = `mongodb://${dbUser}:${dbPass}@127.0.0.1:27017/tacklebox?authSource=admin`;
 } else {
-  const dbUser = encodeURIComponent("bsratzlaff@gmail.com"); 
-  const dbPass = encodeURIComponent("d8V^4zkUD7z%UG");
-  mongoURI = `mongodb://${dbUser}:${dbPass}@127.0.0.1:27018/tacklebox?authSource=admin`;
+  // Fallback if no variables are found
+  mongoURI = 'mongodb://127.0.0.1:27017/tacklebox';
 }
 
-// Connect to MongoDB
+// 3. Connect to MongoDB
 mongoose.connect(mongoURI)
   .then(() => console.log('📁 Cast a line into MongoDB successfully!'))
   .catch((err: any) => console.error(`❌ Database connection snapped: ${err.message}`));
@@ -49,7 +59,7 @@ const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
 });
 
-//Search profiles by username or email
+// Search profiles by username or email
 app.get('/api/profiles/search', async (req, res) => {
   try {
     // 🛠️ FIXED: Force the query parameter to be a string
@@ -130,6 +140,6 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🎣 My Tacklebox backend is live on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Backend server casting wide lines on http://0.0.0.0:${PORT}`);
 });
