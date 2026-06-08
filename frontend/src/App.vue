@@ -3,19 +3,21 @@ import { ref, onMounted } from 'vue';
 
 const usernameQuery = ref('bsratzlaff');
 const profileData = ref<any>(null);
-const gearInventory = ref<any[]>([]); // 🎣 State to hold our array of gear items
+const gearInventory = ref<any[]>([]); 
 const loading = ref(false);
 const errorMessage = ref('');
 
 const searchProfile = async () => {
+  // Prevent double loading or loops if triggered consecutively
+  if (loading.value) return; 
+
   loading.value = true;
   errorMessage.value = '';
   profileData.value = null;
-  gearInventory.value = []; // Clear previous gear array on new search
+  gearInventory.value = []; 
   
   try {
-    // 1. Fetch user profile using the mobile loopback IP
-    const response = await fetch(`http://10.0.2.2:3000/api/profiles/search?username=${usernameQuery.value}`);
+    const response = await fetch(`http://10.0.2.2:3000/api/profiles/search?username=${usernameQuery.value.trim()}`);
     
     if (!response.ok) {
       throw new Error('Failed to reel in data from the server.');
@@ -23,15 +25,21 @@ const searchProfile = async () => {
     
     const data = await response.json();
     
-    if (data.length > 0) {
+    // Explicitly check that data exists and is a valid array
+    if (data && Array.isArray(data) && data.length > 0) {
       profileData.value = data[0];
       
-      // 2. 🪱 If a profile exists, fetch their gear immediately using their database ID!
-      const userId = profileData.value._id || 'mock-user-123';
+      // Extract string ID safely if it's an object/string structure
+      const rawId = profileData.value._id;
+      const userId = typeof rawId === 'object' && rawId?.$oid ? rawId.$oid : String(rawId || 'mock-user-123');
+      
       await fetchUserGear(userId);
+    } else {
+      profileData.value = null;
     }
   } catch (error: any) {
-    errorMessage.value = error.message;
+    console.error('Profile search error:', error);
+    errorMessage.value = error.message || 'Error executing search.';
   } finally {
     loading.value = false;
   }
@@ -39,13 +47,17 @@ const searchProfile = async () => {
 
 const fetchUserGear = async (userId: string) => {
   try {
-    // 🌐 Fetching gear via the emulator loopback link
     const gearResponse = await fetch(`http://10.0.2.2:3000/api/gear/${userId}`);
     if (gearResponse.ok) {
-      gearInventory.value = await gearResponse.json();
+      const gearData = await gearResponse.json();
+      // Ensure it's strictly a primitive array layout to break any mutation memory leaks
+      gearInventory.value = Array.isArray(gearData) ? [...gearData] : [];
+    } else {
+      gearInventory.value = [];
     }
   } catch (error) {
     console.error('Failed to automatically load tacklebox inventory:', error);
+    gearInventory.value = [];
   }
 };
 
@@ -80,11 +92,11 @@ onMounted(() => {
           <p><strong>Name:</strong> {{ profileData.name || 'N/A' }}</p>
         </div>
 
-        <div class="inventory-section">
+        <div class="inventory-section">lllllllllllllllllllllllllllllllll
           <h2>🎣 My Gear Inventory</h2>
           
           <div v-if="gearInventory.length > 0" class="gear-grid">
-            <div v-for="item in gearInventory" :key="item._id || item.name" class="gear-card">
+            <div v-for="(item, index) in gearInventory" :key="item._id ? String(item._id) : 'gear-' + index" class="gear-card">
               <h4>{{ item.name }}</h4>
               <p class="tag">{{ item.category }}</p>
               <div class="details">
