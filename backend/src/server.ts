@@ -140,6 +140,6 @@ app.post('/api/chat', async (req, res) => {
   }
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Backend server casting wide lines on http://0.0.0.0:${PORT}`);
+app.listen(3000, '0.0.0.0', () => {
+  console.log(`🚀 Backend server casting wide lines at port 3000`);
 });
