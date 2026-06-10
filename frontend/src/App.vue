@@ -92,7 +92,7 @@ onMounted(() => {
           <p><strong>Name:</strong> {{ profileData.name || 'N/A' }}</p>
         </div>
 
-        <div class="inventory-section">lllllllllllllllllllllllllllllllll
+        <div class="inventory-section">
           <h2>🎣 My Gear Inventory</h2>
           
           <div v-if="gearInventory.length > 0" class="gear-grid">
