@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
+import CameraButton from './components/CameraButton.vue';
 
 const usernameQuery = ref('bsratzlaff');
 const profileData = ref<any>(null);
@@ -90,7 +91,10 @@ onMounted(() => {
           <h3>🎣 Profile Locked In!</h3>
           <p><strong>Username:</strong> {{ profileData.username }}</p>
           <p><strong>Name:</strong> {{ profileData.name || 'N/A' }}</p>
+        
+          <CameraButton />
         </div>
+      
 
         <div class="inventory-section">
           <h2>🎣 My Gear Inventory</h2>
