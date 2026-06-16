@@ -3,8 +3,8 @@ import mongoose from 'mongoose';
 import { GoogleGenAI } from '@google/genai';
 import 'dotenv/config'; // Handles loading environment variables automatically
 
-// 🛠️ FIXED: Changed extension to .js so the compiler doesn't choke!
-import Profile from './models/Profile.js'; 
+// 🛠️ FIXED: Use .js extension to avoid TypeScript import extension issues
+import Profile from './models/Profile.js';
 import Gear from './models/Gear.js'; 
 import scanRoutes from './routes/scan.routes.js'; 
 
@@ -20,7 +20,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
-app.use('/api/inventory', scanRoutes);
+app.use('/api/tacklebox', scanRoutes);
 
 // ==========================================
 // 🗄️ SECURE DATABASE AUTHENTICATION LOGIC
@@ -116,6 +116,26 @@ app.post('/api/gear', async (req, res) => {
   } catch (error: any) {
     console.error(`🚨 Failed to add gear: ${error.message}`);
     res.status(500).json({ error: 'The database layer rejected the gear item.' });
+  }
+});
+
+//DELETE: Remove a gear item
+app.delete('/api/gear/:itemId', async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    
+    // Attempt to find and remove the item from MongoDB
+    const deletedItem = await Gear.findByIdAndDelete(itemId);
+    
+    if (!deletedItem) {
+      return res.status(404).json({ error: 'Gear item not found in database.' });
+    }
+
+    console.log(`🗑️ Removed item from database: ${deletedItem.name}`);
+    return res.status(200).json({ message: 'Item successfully deleted.' });
+  } catch (error: any) {
+    console.error(`🚨 Failed to delete gear item: ${error.message}`);
+    return res.status(500).json({ error: 'Database layer failed to delete the item.' });
   }
 });
 

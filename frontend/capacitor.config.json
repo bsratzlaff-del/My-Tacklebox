@@ -12,7 +12,9 @@
   },
   "plugins": {
     "CapacitorHttp": {
-      "enabled": true
+      "enabled": true,
+      "connectTimeout": 60000,
+      "readTimeout": 60000
     }
   }
 }

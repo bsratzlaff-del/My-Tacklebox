@@ -4,17 +4,18 @@ import CameraButton from './components/CameraButton.vue';
 
 const usernameQuery = ref('bsratzlaff');
 const profileData = ref<any>(null);
+const currentUserId = ref<string>(''); 
 const gearInventory = ref<any[]>([]); 
 const loading = ref(false);
 const errorMessage = ref('');
 
 const searchProfile = async () => {
-  // Prevent double loading or loops if triggered consecutively
   if (loading.value) return; 
 
   loading.value = true;
   errorMessage.value = '';
   profileData.value = null;
+  currentUserId.value = '';
   gearInventory.value = []; 
   
   try {
@@ -26,14 +27,13 @@ const searchProfile = async () => {
     
     const data = await response.json();
     
-    // Explicitly check that data exists and is a valid array
     if (data && Array.isArray(data) && data.length > 0) {
       profileData.value = data[0];
       
-      // Extract string ID safely if it's an object/string structure
       const rawId = profileData.value._id;
       const userId = typeof rawId === 'object' && rawId?.$oid ? rawId.$oid : String(rawId || 'mock-user-123');
       
+      currentUserId.value = userId;
       await fetchUserGear(userId);
     } else {
       profileData.value = null;
@@ -51,7 +51,6 @@ const fetchUserGear = async (userId: string) => {
     const gearResponse = await fetch(`http://10.0.2.2:3000/api/gear/${userId}`);
     if (gearResponse.ok) {
       const gearData = await gearResponse.json();
-      // Ensure it's strictly a primitive array layout to break any mutation memory leaks
       gearInventory.value = Array.isArray(gearData) ? [...gearData] : [];
     } else {
       gearInventory.value = [];
@@ -59,6 +58,41 @@ const fetchUserGear = async (userId: string) => {
   } catch (error) {
     console.error('Failed to automatically load tacklebox inventory:', error);
     gearInventory.value = [];
+  }
+};
+
+const handleNewGearScanned = (scannedItems: any) => {
+  console.log("🎒 App.vue caught new gear from the camera component:", scannedItems);
+  
+  if (Array.isArray(scannedItems)) {
+    gearInventory.value.unshift(...scannedItems);
+  } else if (scannedItems && typeof scannedItems === 'object') {
+    gearInventory.value.unshift(scannedItems);
+  }
+};
+
+// 🛠️ NEW: Sends a delete request to the backend and drops it from the UI state
+const deleteGearItem = async (itemId: string, index: number) => {
+  // If it's a mock item without a DB ID, just drop it from the local screen array
+  if (!itemId || itemId.startsWith('gear-')) {
+    gearInventory.value.splice(index, 1);
+    return;
+  }
+
+  try {
+    const response = await fetch(`http://10.0.2.2:3000/api/gear/${itemId}`, {
+      method: 'DELETE'
+    });
+
+    if (response.ok) {
+      // Successfully deleted from database, now filter it out of the UI list instantly
+      gearInventory.value.splice(index, 1);
+      console.log(`🗑️ Local card removed for ID: ${itemId}`);
+    } else {
+      console.error('Backend refused to delete the item.');
+    }
+  } catch (error) {
+    console.error('Network error during item deletion:', error);
   }
 };
 
@@ -92,7 +126,7 @@ onMounted(() => {
           <p><strong>Username:</strong> {{ profileData.username }}</p>
           <p><strong>Name:</strong> {{ profileData.name || 'N/A' }}</p>
         
-          <CameraButton />
+          <CameraButton :userId="currentUserId" @lureScanned="handleNewGearScanned" />
         </div>
       
 
@@ -101,7 +135,10 @@ onMounted(() => {
           
           <div v-if="gearInventory.length > 0" class="gear-grid">
             <div v-for="(item, index) in gearInventory" :key="item._id ? String(item._id) : 'gear-' + index" class="gear-card">
-              <h4>{{ item.name }}</h4>
+              <div class="card-header">
+                <h4>{{ item.name }}</h4>
+                <button class="delete-btn" @click="deleteGearItem(item._id ? String(item._id) : '', index)" title="Delete Item">×</button>
+              </div>
               <p class="tag">{{ item.category }}</p>
               <div class="details">
                 <span><strong>Brand:</strong> {{ item.brand || 'Generic' }}</span>
@@ -182,7 +219,6 @@ button:hover { background-color: #42b883; }
 }
 .profile-card h3 { margin-top: 0; color: #42b883; }
 
-/* New Design Layout Styles for Mobile Gear */
 .inventory-section h2 {
   font-size: 20px;
   color: #35495e;
@@ -198,8 +234,30 @@ button:hover { background-color: #42b883; }
   background: white;
   padding: 12px;
   border-radius: 6px;
+  position: relative;
 }
-.gear-card h4 { margin: 0 0 4px 0; font-size: 15px; }
+/* 🛠️ NEW STYLES: Cleans up header layout and adds the deletion action layout styles */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 4px;
+}
+.gear-card h4 { margin: 0 0 4px 0; font-size: 15px; flex: 1; }
+.delete-btn {
+  background: transparent;
+  color: #a0aec0;
+  border: none;
+  font-size: 20px;
+  line-height: 14px;
+  padding: 0 4px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.delete-btn:hover {
+  color: #e53e3e;
+}
+
 .tag {
   display: inline-block;
   background: #edf2f7;
