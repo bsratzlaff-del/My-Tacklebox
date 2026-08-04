@@ -1,69 +1,48 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
+// @ts-ignore: Vue SFC module types may be missing in some TS setups
+import LoginView from './components/LoginView.vue';
+// @ts-ignore: Vue SFC module types may be missing in some TS setups
 import CameraButton from './components/CameraButton.vue';
 
-const usernameQuery = ref('bsratzlaff');
+// Centralize API endpoint to make it configurable for different environments (local, k8s, etc.)
+const API_BASE_URL =
+  (import.meta as ImportMeta & { env?: { VITE_API_BASE_URL?: string } }).env?.VITE_API_BASE_URL ||
+  'http://localhost:3000';
+
 const profileData = ref<any>(null);
 const currentUserId = ref<string>(''); 
 const gearInventory = ref<any[]>([]); 
-const loading = ref(false);
-const errorMessage = ref('');
+const loadingInventory = ref(false);
 
-const searchProfile = async () => {
-  if (loading.value) return; 
-
-  loading.value = true;
-  errorMessage.value = '';
-  profileData.value = null;
-  currentUserId.value = '';
-  gearInventory.value = []; 
+// 🔐 Fired dynamically when LoginView emits 'loginSuccess'
+const handleLoginSuccess = async (userProfile: any) => {
+  profileData.value = userProfile;
   
-  try {
-    const response = await fetch(`http://10.0.2.2:3000/api/profiles/search?username=${usernameQuery.value.trim()}`);
-    
-    if (!response.ok) {
-      throw new Error('Failed to reel in data from the server.');
-    }
-    
-    const data = await response.json();
-    
-    if (data && Array.isArray(data) && data.length > 0) {
-      profileData.value = data[0];
-      
-      const rawId = profileData.value._id;
-      const userId = typeof rawId === 'object' && rawId?.$oid ? rawId.$oid : String(rawId || 'mock-user-123');
-      
-      currentUserId.value = userId;
-      await fetchUserGear(userId);
-    } else {
-      profileData.value = null;
-    }
-  } catch (error: any) {
-    console.error('Profile search error:', error);
-    errorMessage.value = error.message || 'Error executing search.';
-  } finally {
-    loading.value = false;
-  }
+  const rawId = userProfile._id;
+  currentUserId.value = typeof rawId === 'object' && rawId?.$oid ? rawId.$oid : String(rawId || '');
+  
+  // Instantly fetch the authenticated user's tacklebox items
+  await fetchUserGear(currentUserId.value);
 };
 
 const fetchUserGear = async (userId: string) => {
+  loadingInventory.value = true;
   try {
-    const gearResponse = await fetch(`http://10.0.2.2:3000/api/gear/${userId}`);
+    const gearResponse = await fetch(`${API_BASE_URL}/api/gear/${userId}`);
     if (gearResponse.ok) {
       const gearData = await gearResponse.json();
       gearInventory.value = Array.isArray(gearData) ? [...gearData] : [];
-    } else {
-      gearInventory.value = [];
     }
   } catch (error) {
-    console.error('Failed to automatically load tacklebox inventory:', error);
-    gearInventory.value = [];
+    console.error('Failed to load tacklebox inventory:', error);
+  } finally {
+    loadingInventory.value = false;
   }
 };
 
 const handleNewGearScanned = (scannedItems: any) => {
   console.log("🎒 App.vue caught new gear from the camera component:", scannedItems);
-  
   if (Array.isArray(scannedItems)) {
     gearInventory.value.unshift(...scannedItems);
   } else if (scannedItems && typeof scannedItems === 'object') {
@@ -71,21 +50,18 @@ const handleNewGearScanned = (scannedItems: any) => {
   }
 };
 
-// 🛠️ NEW: Sends a delete request to the backend and drops it from the UI state
 const deleteGearItem = async (itemId: string, index: number) => {
-  // If it's a mock item without a DB ID, just drop it from the local screen array
   if (!itemId || itemId.startsWith('gear-')) {
     gearInventory.value.splice(index, 1);
     return;
   }
 
   try {
-    const response = await fetch(`http://10.0.2.2:3000/api/gear/${itemId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/gear/${itemId}`, {
       method: 'DELETE'
     });
 
     if (response.ok) {
-      // Successfully deleted from database, now filter it out of the UI list instantly
       gearInventory.value.splice(index, 1);
       console.log(`🗑️ Local card removed for ID: ${itemId}`);
     } else {
@@ -96,44 +72,42 @@ const deleteGearItem = async (itemId: string, index: number) => {
   }
 };
 
-onMounted(() => {
-  searchProfile();
-});
+// 🚪 Destroys active session state to return to login overlay
+const handleSignOut = () => {
+  profileData.value = null;
+  currentUserId.value = '';
+  gearInventory.value = [];
+};
 </script>
 
 <template>
   <div class="tacklebox-container">
-    <header>
-      <h1>🧰 My Tacklebox UI</h1>
-      <p>Powered by Vue 3, Vite, and TypeScript</p>
-    </header>
+    <div v-if="!profileData">
+      <LoginView @loginSuccess="handleLoginSuccess" />
+    </div>
 
-    <main>
-      <div class="search-bar">
-        <input v-model="usernameQuery" type="text" placeholder="Search username..." @keyup.enter="searchProfile" />
-        <button @click="searchProfile">Search</button>
-      </div>
+    <div v-else>
+      <header class="app-header">
+        <div>
+          <h1>🧰 My Tacklebox Home</h1>
+          <p>Welcome back, <strong>{{ profileData.name || profileData.username }}</strong>!</p>
+        </div>
+        <button @click="handleSignOut" class="signout-btn">Sign Out</button>
+      </header>
 
-      <div v-if="loading" class="status loading">Casting a line to the backend...</div>
-      
-      <div v-else-if="errorMessage" class="status error">
-        ⚠️ {{ errorMessage }}
-      </div>
-
-      <div v-else-if="profileData" class="dashboard-layout">
+      <main class="dashboard-layout">
         <div class="profile-card">
-          <h3>🎣 Profile Locked In!</h3>
-          <p><strong>Username:</strong> {{ profileData.username }}</p>
-          <p><strong>Name:</strong> {{ profileData.name || 'N/A' }}</p>
-        
+          <h3>🎣 Scan New Gear Context</h3>
+          <p>Snap a photo to instantly add visual components straight to your storage account via Gemini Flash Vision.</p>
           <CameraButton :userId="currentUserId" @lureScanned="handleNewGearScanned" />
         </div>
-      
 
         <div class="inventory-section">
-          <h2>🎣 My Gear Inventory</h2>
+          <h2>📦 Current Asset Inventory</h2>
           
-          <div v-if="gearInventory.length > 0" class="gear-grid">
+          <div v-if="loadingInventory" class="loading-spinner">Reeling in inventory records...</div>
+          
+          <div v-else-if="gearInventory.length > 0" class="gear-grid">
             <div v-for="(item, index) in gearInventory" :key="item._id ? String(item._id) : 'gear-' + index" class="gear-card">
               <div class="card-header">
                 <h4>{{ item.name }}</h4>
@@ -148,15 +122,11 @@ onMounted(() => {
           </div>
           
           <div v-else class="empty-inventory">
-            <p>This tacklebox is empty! No lures, rods, or reels found.</p>
+            <p>Your tacklebox is empty. Click the camera above to scan your local gear assets.</p>
           </div>
         </div>
-      </div>
-
-      <div v-else class="status empty">
-        No profile matches found for "{{ usernameQuery }}".
-      </div>
-    </main>
+      </main>
+    </div>
   </div>
 </template>
 
@@ -168,117 +138,36 @@ onMounted(() => {
   color: #2c3e50;
   padding: 20px;
 }
-header {
-  text-align: center;
-  border-bottom: 2px solid #42b883;
-  padding-bottom: 10px;
-  margin-bottom: 30px;
-}
-h1 { color: #42b883; margin-bottom: 5px; }
-.search-bar {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-input {
-  flex: 1;
-  padding: 10px;
-  font-size: 16px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-button {
-  padding: 10px 20px;
-  font-size: 16px;
-  background-color: #35495e;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-button:hover { background-color: #42b883; }
-.dashboard-layout {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-.status {
-  text-align: center;
-  padding: 20px;
-  border-radius: 6px;
-  background: #f8f9fa;
-}
-.error { color: #e74c3c; background: #fdeae8; }
-.profile-card {
-  border: 1px solid #42b883;
-  background: #f6fffa;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-}
-.profile-card h3 { margin-top: 0; color: #42b883; }
-
-.inventory-section h2 {
-  font-size: 20px;
-  color: #35495e;
-  margin-bottom: 10px;
-}
-.gear-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 12px;
-}
-.gear-card {
-  border: 1px solid #e2e8f0;
-  background: white;
-  padding: 12px;
-  border-radius: 6px;
-  position: relative;
-}
-/* 🛠️ NEW STYLES: Cleans up header layout and adds the deletion action layout styles */
-.card-header {
+.app-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 4px;
-}
-.gear-card h4 { margin: 0 0 4px 0; font-size: 15px; flex: 1; }
-.delete-btn {
-  background: transparent;
-  color: #a0aec0;
-  border: none;
-  font-size: 20px;
-  line-height: 14px;
-  padding: 0 4px;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-.delete-btn:hover {
-  color: #e53e3e;
+  align-items: center;
+  border-bottom: 2px solid #42b883;
+  padding-bottom: 14px;
+  margin-bottom: 30px;
 }
 
-.tag {
-  display: inline-block;
-  background: #edf2f7;
-  color: #4a5568;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: bold;
+.app-header h1 { 
+  color: #42b883; 
+  margin: 0 0 4px 0; 
+  font-size: 20px; /* Slightly smaller for mobile scaling */
 }
-.details {
-  display: flex;
-  flex-direction: column;
-  font-size: 12px;
-  color: #718096;
-  margin-top: 8px;
-}
-.empty-inventory {
-  text-align: center;
-  padding: 20px;
-  background: #f8f9fa;
+
+/* 🛠️ HIGHLY VISIBLE SIGN OUT ACTION BUTTON */
+.signout-btn {
+  background: #e53e3e; /* Crisp crimson red so you can't miss it */
+  color: white;
+  border: none;
+  padding: 8px 16px;
   border-radius: 6px;
-  border: 1px dashed #cbd5e0;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: background 0.2s;
+}
+
+.signout-btn:hover { 
+  background: #c53030; 
 }
 </style>

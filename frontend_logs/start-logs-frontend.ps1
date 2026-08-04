@@ -1,3 +1,7 @@
+param(
+    [string]$DeploymentName = "tacklebox-frontend-deployment"
+)
+
 chcp 65001 | Out-Null
 
 # 1. Point to a frontend log folder
@@ -10,7 +14,7 @@ if (-not (Test-Path $logDir)) { New-Item -ItemType Directory -Path $logDir | Out
 Write-Host "🎨 Tacklebox Frontend Log Streamer Active!" -ForegroundColor Magenta
 
 # 2. Target your frontend Kubernetes deployment name instead!
-kubectl logs deployment/tacklebox-frontend-deployment -f | ForEach-Object {
+kubectl logs deployment/$DeploymentName -f | ForEach-Object {
     $line = $_
     Add-Content -Path $combinedPath -Value $line -Encoding UTF8
     

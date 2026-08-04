@@ -1,3 +1,7 @@
+param(
+    [string]$DeploymentName = "tacklebox-deployment"
+)
+
 # Force the terminal window to support UTF-8 Emojis
 chcp 65001 | Out-Null
 
@@ -16,7 +20,7 @@ Write-Host "📝 Writing to: $logDir" -ForegroundColor Yellow
 Write-Host "Press Ctrl+C to stop streaming.`n"
 
 # Stream and sort the logs live
-kubectl logs deployment/tacklebox-deployment -f | ForEach-Object {
+kubectl logs deployment/$DeploymentName -f | ForEach-Object {
     $line = $_
     
     # 1. Write to combined log

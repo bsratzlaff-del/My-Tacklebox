@@ -8,5 +8,5 @@
     "**/backend_logs": false,  // Set to true if you want to completely hide it from the sidebar
     "**/node_modules": true
   },
-  "java.configuration.updateBuildConfiguration": "interactive"
+  "java.configuration.updateBuildConfiguration": "automatic"
 }
