@@ -4,7 +4,8 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.6.0'
+        // Android Gradle Plugin 9.0.0 is compatible with Gradle 9.6.1
+        classpath 'com.android.tools.build:gradle:9.0.0'
     }
 }
 

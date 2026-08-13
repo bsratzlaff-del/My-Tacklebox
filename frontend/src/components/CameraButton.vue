@@ -9,6 +9,9 @@
 <script setup lang="ts">
 import { ref, inject } from 'vue'; // If profile data isn't in a global state, inject it or pass it as a prop
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+// 💡 PROPER WAY: Import the dedicated upload function from the centralized API client.
+import { scanTackleboxPhoto } from '../services/apiClient';
+
 
 // Assuming you pass the active user ID as a prop from App.vue
 const props = defineProps<{
@@ -45,23 +48,12 @@ const takePhoto = async () => {
     // 🛠️ FIX 3: Inject the active target account ID (Fallback used for testing if missing)
     formData.append('userId', props.userId || 'mock-user-123');
 
-    // 🛠️ FIX 1: Pointing directly to /api/tacklebox/scan on port 3000
-    const backendUrl = 'http://10.0.2.2:3000/api/tacklebox/scan'; 
+    // 4. Use the centralized, platform-aware API client to upload the photo
+    const apiPayload = await scanTackleboxPhoto(formData);
+    console.log("AI execution flow finished:", apiPayload);
     
-    const serverResponse = await fetch(backendUrl, {
-      method: 'POST',
-      body: formData
-    });
-
-    if (serverResponse.ok) {
-      const apiPayload = await serverResponse.json();
-      console.log("AI execution flow finished:", apiPayload);
-      
-      // Pass the saved database records up to update the layout array grid
-      emit('lureScanned', apiPayload.data);
-    } else {
-      console.error("The node runtime execution route caught an edge anomaly.");
-    }
+    // 5. Pass the saved database records up to update the layout array grid
+    emit('lureScanned', apiPayload.data);
 
   } catch (e) {
     console.error("Pipeline processing crash:", e);

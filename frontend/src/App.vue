@@ -4,38 +4,34 @@ import { ref } from 'vue';
 import LoginView from './components/LoginView.vue';
 // @ts-ignore: Vue SFC module types may be missing in some TS setups
 import CameraButton from './components/CameraButton.vue';
+// 💡 PROPER WAY: Import dedicated functions and types from a centralized API client.
+// This separates data fetching logic from the component's view logic.
+import { getUserGear, deleteGearItem as apiDeleteGearItem, type Gear, type UserProfile } from './services/apiClient';
 
-// Centralize API endpoint to make it configurable for different environments (local, k8s, etc.)
-const API_BASE_URL =
-  (import.meta as ImportMeta & { env?: { VITE_API_BASE_URL?: string } }).env?.VITE_API_BASE_URL ||
-  'http://localhost:3000';
-
-const profileData = ref<any>(null);
+const profileData = ref<UserProfile | null>(null);
 const currentUserId = ref<string>(''); 
-const gearInventory = ref<any[]>([]); 
+const gearInventory = ref<Gear[]>([]); 
 const loadingInventory = ref(false);
 
 // 🔐 Fired dynamically when LoginView emits 'loginSuccess'
-const handleLoginSuccess = async (userProfile: any) => {
+const handleLoginSuccess = async (userProfile: UserProfile) => {
   profileData.value = userProfile;
   
   const rawId = userProfile._id;
   currentUserId.value = typeof rawId === 'object' && rawId?.$oid ? rawId.$oid : String(rawId || '');
   
   // Instantly fetch the authenticated user's tacklebox items
-  await fetchUserGear(currentUserId.value);
+  await loadUserGear(currentUserId.value);
 };
 
-const fetchUserGear = async (userId: string) => {
+const loadUserGear = async (userId: string) => {
   loadingInventory.value = true;
   try {
-    const gearResponse = await fetch(`${API_BASE_URL}/api/gear/${userId}`);
-    if (gearResponse.ok) {
-      const gearData = await gearResponse.json();
-      gearInventory.value = Array.isArray(gearData) ? [...gearData] : [];
-    }
+    // The component now just calls the clean, reusable function from the service.
+    gearInventory.value = await getUserGear(userId);
   } catch (error) {
     console.error('Failed to load tacklebox inventory:', error);
+    // You could add user-facing error feedback here
   } finally {
     loadingInventory.value = false;
   }
@@ -57,18 +53,13 @@ const deleteGearItem = async (itemId: string, index: number) => {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/gear/${itemId}`, {
-      method: 'DELETE'
-    });
-
-    if (response.ok) {
-      gearInventory.value.splice(index, 1);
-      console.log(`🗑️ Local card removed for ID: ${itemId}`);
-    } else {
-      console.error('Backend refused to delete the item.');
-    }
+    // Call the API client to perform the deletion. We alias the import to avoid name conflicts.
+    await apiDeleteGearItem(itemId);
+    // On success, update the local state.
+    gearInventory.value.splice(index, 1);
+    console.log(`🗑️ Item deleted successfully via API: ${itemId}`);
   } catch (error) {
-    console.error('Network error during item deletion:', error);
+    console.error('Failed to delete item:', error);
   }
 };
 
